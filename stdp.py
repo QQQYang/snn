@@ -32,10 +32,10 @@ def stdp(w, param, spiketimePre, spiketimePost, stdpType):
     else:
         # bi-phasic STDP
         learnRate = np.ones((preNum, postNum)) * param.A_pos
-        learnRate[spiketimeDelta > 0] = param.A_neg
-        spiketimeDelta[spiketimeDelta > 0] = -spiketimeDelta[spiketimeDelta > 0]
+        learnRate[spiketimeDelta > 0] = -param.A_neg
         tau = np.ones((preNum, postNum)) * param.tau_pos
         tau[spiketimeDelta > 0] = param.tau_neg
+        spiketimeDelta[spiketimeDelta > 0] = -spiketimeDelta[spiketimeDelta > 0]
         dw = learnRate * e**(spiketimeDelta/tau)
         dw[spiketimePostCopy < 0] = 0
         dw[spiketimePreCopy < 0] = 0

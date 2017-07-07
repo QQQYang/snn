@@ -63,22 +63,27 @@ class layerModel(object):
     def update(self, param, w, sp, dt, curTime):
         a_e = (2*param.tau_e - dt)/(2*param.tau_e + dt)
         b_e = 2/(2*param.tau_e + dt)
-        self.g_e = np.dot(a_e, self.g_e) + np.dot(b_e, np.dot(w.T, sp))
-        top = (np.dot(np.ones(self.num), (2*param.c_m/dt)) - (np.dot(np.ones(self.num), param.g_l) + self.g_e))*self.v + 2*param.g_l*param.v_l*np.ones(self.num)
+        g_e_pre = self.g_e
+        self.g_e = np.dot(a_e, self.g_e) + np.dot(b_e, np.dot(w.T, sp)) #weight has effect on conductance
+        top = (np.dot(np.ones(self.num), (2*param.c_m/dt)) - (np.dot(np.ones(self.num), param.g_l) + g_e_pre))*self.v + 2*param.g_l*param.v_l*np.ones(self.num) \
+           + (self.g_e + g_e_pre)*param.v_e_syn
         bot = (2*param.c_m/dt + param.g_l) * np.ones(self.num) + self.g_e
 
         # refractory
+        if abs(bot[0])<1e-6:
+            print('oh! my god! What happened')
         self.v = top/bot
+        self.v[self.v < param.v_res] = param.v_res  # limit the voltage
         self.v[self.t > 0] = param.v_res
 
         # threhold judgement
         spikeInd = np.nonzero(self.v > param.v_thr)
-        self.v[spikeInd] = param.v_res
         self.spike[spikeInd] = 1
         self.spikeTime[spikeInd] = curTime  # record spike time
         #self.t[spikeInd] = int(param.t_ref/dt)
 
         noSpikeInd = np.nonzero(self.v <= param.v_thr)
+        self.v[spikeInd] = param.v_res
         self.spike[noSpikeInd] = 0
         #self.t[np.nonzero(np.logical_and(self.v <= param.v_thr, self.t > 0))] -= 1
         self.t[self.t > 0] -= 1
